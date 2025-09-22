@@ -6,18 +6,21 @@ const int sensorEsquerdo = A2;  // Pino analógico para o sensor IR esquerdo
 const int sensorDireito = A1;   // Pino analógico para o sensor IR direito
 
 //const int ENA = 5;  // PWM para velocidade do motor esquerdo
-const int IN1 = 8;  // Controle de direção motor esquerdo
-const int IN2 = 9;  // Controle de direção motor esquerdo
+const int IN1 = 6;  // Controle de direção motor esquerdo
+const int IN2 = 7;  // Controle de direção motor esquerdo
 
 //const int ENB = 6;  // PWM para velocidade do motor direito
-const int IN3 = 6;  // Controle de direção motor direito
-const int IN4 = 7;  // Controle de direção motor direito
+const int IN3 = 8;  // Controle de direção motor direito
+const int IN4 = 9;  // Controle de direção motor direito
 
 //const int velocidade = 200;  // Velocidade base (0-255)
-const int limiar = 500;      // Limiar para distinguir branco (alto) de preto (baixo)
+const int limiar = 20;      // Limiar para distinguir branco (alto) de preto (baixo)
+
+int valorEsquerdo,valorDireito;
 
 // Função de setup
 void setup() {
+  Serial.begin(9600);
   // Configura os pinos dos sensores como entrada
   pinMode(sensorEsquerdo, INPUT);
   pinMode(sensorDireito, INPUT);
@@ -34,12 +37,14 @@ void setup() {
 // Função principal de loop
 void loop() {
   // Lê os valores analógicos dos sensores
-  int valorEsquerdo = analogRead(sensorEsquerdo);
-  int valorDireito = analogRead(sensorDireito);
+  valorEsquerdo = analogRead(sensorEsquerdo);
+  valorDireito = analogRead(sensorDireito);
   
   // Converte para HIGH (branco) ou LOW (preto) com base no limiar
-  bool esquerdo = valorEsquerdo > limiar ? HIGH : LOW;
-  bool direito = valorDireito > limiar ? HIGH : LOW;
+  bool esquerdo = valorEsquerdo < limiar ? HIGH : LOW;
+  bool direito = valorDireito < limiar ? HIGH : LOW;
+
+  mostrar();
   
   if (esquerdo == HIGH && direito == HIGH) {
     // Ambos sobre branco: seguir em frente
@@ -105,4 +110,11 @@ void parar() {
   digitalWrite(IN3, LOW);
   digitalWrite(IN4, LOW);
   //analogWrite(ENB, 0);
+}
+
+void mostrar(){
+  Serial.print("Valor direito: |");
+  Serial.print(valorDireito);
+  Serial.print(" Valor esquerdo:");
+  Serial.println(valorEsquerdo);
 }
