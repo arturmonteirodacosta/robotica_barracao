@@ -1,0 +1,106 @@
+#include <QTRSensors.h>
+
+// ---------- CONFIGURAÇÃO DO SENSOR ----------
+#define NUM_SENSORS 8
+#define NUM_SAMPLES_PER_SENSOR 8
+#define EMITTER_PIN 2
+
+QTRSensorsAnalog qtra((unsigned char[]){A0,A1,A2,A3,A4,A5,A6,A7}, NUM_SENSORS, NUM_SAMPLES_PER_SENSOR, EMITTER_PIN);
+unsigned int sensorValues[NUM_SENSORS];
+
+// ---------- CONFIGURAÇÃO DOS MOTORES ----------
+const int motorA1A = 8;
+const int motorA1B = 9;
+const int motorB1A = 10;
+const int motorB1B = 11;
+
+// ---------- PARAMETROS PD (removido KI para evitar acumulações em curvas) ----------
+double KP = 3.5;     // Aumentado para correção mais forte contra subviragem
+double KD = 3.5;     // Diminuído para menos amortecimento, permitindo viradas ágeis
+
+double lastError = 0;
+const int GOAL = 3500;
+const int MAX_ADJUST = 180;            // Aumentado para correções mais fortes em curvas
+const int BASE_SPEED_MAX = 110;        // Levemente maior para retas
+const int BASE_SPEED_MIN = 60;         // Menor para curvas, dando tempo de corrigir
+
+// ---------- SETUP ----------
+void setup() {
+  Serial.begin(9600);
+  pinMode(motorA1A, OUTPUT);
+  pinMode(motorA1B, OUTPUT);
+  pinMode(motorB1A, OUTPUT);
+  pinMode(motorB1B, OUTPUT);
+
+  // Calibração dos sensores
+  Serial.println("Calibrando sensores...");
+  for (int i = 0; i < 80; i++) {
+    qtra.calibrate();
+    delay(25);
+  }
+  Serial.println("Calibração concluída!");
+
+  // Mostrar valores de calibração
+  for (int i = 0; i < NUM_SENSORS; i++) {
+    Serial.print("Sensor "); Serial.print(i);
+    Serial.print(" min: "); Serial.print(qtra.calibratedMinimumOn[i]);
+    Serial.print(" | max: "); Serial.println(qtra.calibratedMaximumOn[i]);
+  }
+}
+
+// ---------- LOOP ----------
+void loop() {
+  // Leitura da linha (sem interpolação)
+  int position = qtra.readLine(sensorValues, QTR_EMITTERS_ON, false);
+  int error = GOAL - position;
+
+  // PD (sem integral)
+  int derivative = error - lastError;
+  double adjustment = KP * error + KD * derivative;
+  lastError = error;
+  adjustment = constrain(adjustment, -MAX_ADJUST, MAX_ADJUST);
+
+  // Velocidade adaptativa (ajustada para desacelerar mais em curvas)
+  int curva = abs(error);
+  int baseSpeed = map(curva, 0, 3000, BASE_SPEED_MAX, BASE_SPEED_MIN);
+  int leftSpeed = constrain(baseSpeed - adjustment, 0, 255);
+  int rightSpeed = constrain(baseSpeed + adjustment, 0, 255);
+
+  // Recuperação se perdeu a linha
+  if (position < 100 || position > 6900) {
+    if (lastError > 0)
+      setMotor(130, -130);  // gira pra direita
+    else
+      setMotor(-130, 130);  // gira pra esquerda
+    return;
+  }
+
+  // Envia comandos para os motores
+  setMotor(leftSpeed, rightSpeed);
+
+  // Debug
+  Serial.print("Pos: "); Serial.print(position);
+  Serial.print(" | Err: "); Serial.print(error);
+  Serial.print(" | L: "); Serial.print(leftSpeed);
+  Serial.print(" R: "); Serial.println(rightSpeed);
+  //delay(100);
+}
+
+// ---------- CONTROLE DOS MOTORES ----------
+void setMotor(int left, int right) {
+  if (left >= 0) {
+    analogWrite(motorA1A, left);
+    analogWrite(motorA1B, 0);
+  } else {
+    analogWrite(motorA1A, 0);
+    analogWrite(motorA1B, -left);
+  }
+
+  if (right >= 0) {
+    analogWrite(motorB1A, right);
+    analogWrite(motorB1B, 0);
+  } else {
+    analogWrite(motorB1A, 0);
+    analogWrite(motorB1B, -right);
+  }
+}
