@@ -1,1 +1,120 @@
+// Código para robô seguidor de linha usando Arduino Nano, dois sensores IR MH (KY-033 ou similar),
+// pista branca com linha preta, sensores em portas analógicas, e ponte H HW-095 (baseada em L298N).
 
+// Definição dos pinos
+const int sensorEsquerdo = A2;  // Pino analógico para o sensor IR esquerdo
+const int sensorDireito = A1;   // Pino analógico para o sensor IR direito
+
+//const int ENA = 5;  // PWM para velocidade do motor esquerdo
+const int IN1 = 6;  // Controle de direção motor esquerdo
+const int IN2 = 7;  // Controle de direção motor esquerdo
+
+//const int ENB = 6;  // PWM para velocidade do motor direito
+const int IN3 = 8;  // Controle de direção motor direito
+const int IN4 = 9;  // Controle de direção motor direito
+
+//const int velocidade = 200;  // Velocidade base (0-255)
+const int limiar = 20;      // Limiar para distinguir branco (alto) de preto (baixo)
+
+int valorEsquerdo,valorDireito;
+
+// Função de setup
+void setup() {
+  Serial.begin(9600);
+  // Configura os pinos dos sensores como entrada
+  pinMode(sensorEsquerdo, INPUT);
+  pinMode(sensorDireito, INPUT);
+  
+  // Configura os pinos da ponte H como saída
+  //pinMode(ENA, OUTPUT);
+  pinMode(IN1, OUTPUT);
+  pinMode(IN2, OUTPUT);
+  //pinMode(ENB, OUTPUT);
+  pinMode(IN3, OUTPUT);
+  pinMode(IN4, OUTPUT);
+}
+
+// Função principal de loop
+void loop() {
+  // Lê os valores analógicos dos sensores
+  valorEsquerdo = analogRead(sensorEsquerdo);
+  valorDireito = analogRead(sensorDireito);
+  
+  // Converte para HIGH (branco) ou LOW (preto) com base no limiar
+  bool esquerdo = valorEsquerdo < limiar ? HIGH : LOW;
+  bool direito = valorDireito < limiar ? HIGH : LOW;
+
+  mostrar();
+  
+  if (esquerdo == HIGH && direito == HIGH) {
+    // Ambos sobre branco: seguir em frente
+    frente();
+  } else if (esquerdo == LOW && direito == HIGH) {
+    // Esquerdo sobre preto, direito sobre branco: virar à direita
+    viraDireita();
+  } else if (esquerdo == HIGH && direito == LOW) {
+    // Esquerdo sobre branco, direito sobre preto: virar à esquerda
+    viraEsquerda();
+  } else {
+    // Ambos sobre preto: parar
+    parar();
+  }
+}
+
+// Função para ir para frente
+void frente() {
+  // Motor esquerdo para frente
+  digitalWrite(IN1, HIGH);
+  digitalWrite(IN2, LOW);
+  //analogWrite(ENA, velocidade);
+  
+  // Motor direito para frente
+  digitalWrite(IN3, HIGH);
+  digitalWrite(IN4, LOW);
+  //analogWrite(ENB, velocidade);
+}
+
+// Função para virar à esquerda (parar motor esquerdo, motor direito para frente)
+void viraEsquerda() {
+  // Motor esquerdo parado
+  digitalWrite(IN1, LOW);
+  digitalWrite(IN2, LOW);
+  //analogWrite(ENA, 0);
+  
+  // Motor direito para frente
+  digitalWrite(IN3, HIGH);
+  digitalWrite(IN4, LOW);
+  //analogWrite(ENB, velocidade);
+}
+
+// Função para virar à direita (motor esquerdo para frente, motor direito parado)
+void viraDireita() {
+  // Motor esquerdo para frente
+  digitalWrite(IN1, HIGH);
+  digitalWrite(IN2, LOW);
+  //analogWrite(ENA, velocidade);
+  
+  // Motor direito parado
+  digitalWrite(IN3, LOW);
+  digitalWrite(IN4, LOW);
+  //analogWrite(ENB, 0);
+}
+
+// Função para parar
+void parar() {
+  // Ambos motores parados
+  digitalWrite(IN1, LOW);
+  digitalWrite(IN2, LOW);
+  //analogWrite(ENA, 0);
+  
+  digitalWrite(IN3, LOW);
+  digitalWrite(IN4, LOW);
+  //analogWrite(ENB, 0);
+}
+
+void mostrar(){
+  Serial.print("Valor direito: |");
+  Serial.print(valorDireito);
+  Serial.print(" Valor esquerdo:");
+  Serial.println(valorEsquerdo);
+}
