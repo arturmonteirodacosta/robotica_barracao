@@ -1,1 +1,24 @@
+TCS3472
+VIN: 5v
+GND: GND
+3v3: 3v3
+SDA: A4
+SCL: A5
+INT: D8
+LED: D9
 
+HC-SR04
+VCC: 5v
+Tring: D7
+Echo: D6
+GND: GND
+
+MH-Sensor-Serial Direito
+VCC: 5V
+GND: GND
+A0: A7
+
+MH-Sensor-Serial Esquerdo
+VCC: 5V
+GND: GND
+A0: A6
