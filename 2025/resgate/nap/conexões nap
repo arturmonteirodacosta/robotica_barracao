@@ -22,3 +22,12 @@ MH-Sensor-Serial Esquerdo
 VCC: 5V
 GND: GND
 A0: A6
+
+Ponte-H HW-095
+12v: 5v
+GND: GND
+5v: 5v
+IN1: D2
+IN2: D3
+IN3: D4
+IN4: D5
