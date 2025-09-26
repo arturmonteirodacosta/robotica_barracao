@@ -2,19 +2,19 @@
 // pista branca com linha preta, sensores em portas analógicas, e ponte H HW-095 (baseada em L298N).
 
 // Definição dos pinos
-const int sensorEsquerdo = A2;  // Pino analógico para o sensor IR esquerdo
-const int sensorDireito = A1;   // Pino analógico para o sensor IR direito
+const int sensorEsquerdo = A7;  // Pino analógico para o sensor IR esquerdo
+const int sensorDireito = A6;   // Pino analógico para o sensor IR direito
 
 //const int ENA = 5;  // PWM para velocidade do motor esquerdo
-const int IN1 = 6;  // Controle de direção motor esquerdo
-const int IN2 = 7;  // Controle de direção motor esquerdo
+const int IN1 = 5;  // Controle de direção motor esquerdo
+const int IN2 = 4;  // Controle de direção motor esquerdo
 
 //const int ENB = 6;  // PWM para velocidade do motor direito
-const int IN3 = 8;  // Controle de direção motor direito
-const int IN4 = 9;  // Controle de direção motor direito
+const int IN3 = 3;  // Controle de direção motor direito
+const int IN4 = 2;  // Controle de direção motor direito
 
 //const int velocidade = 200;  // Velocidade base (0-255)
-const int limiar = 20;      // Limiar para distinguir branco (alto) de preto (baixo)
+const int limiar = 25;      // Limiar para distinguir branco (alto) de preto (baixo)
 
 int valorEsquerdo,valorDireito;
 
