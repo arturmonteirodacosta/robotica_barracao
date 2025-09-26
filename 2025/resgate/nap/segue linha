@@ -1,21 +1,22 @@
-// Código para robô seguidor de linha usando Arduino Nano, dois sensores IR MH (KY-033 ou similar),
-// pista branca com linha preta, sensores em portas analógicas, e ponte H HW-095 (baseada em L298N).
-
 // Definição dos pinos
+const int trigPin = 7;    // Pino TRIG do HC-SR04
+const int echoPin = 6;    // Pino ECHO do HC-SR04
+
+// Pinos MH-Sensor-Seria
 const int sensorEsquerdo = A7;  // Pino analógico para o sensor IR esquerdo
 const int sensorDireito = A6;   // Pino analógico para o sensor IR direito
 
-//const int ENA = 5;  // PWM para velocidade do motor esquerdo
+// Pinos Ponte-H
 const int IN1 = 5;  // Controle de direção motor esquerdo
 const int IN2 = 4;  // Controle de direção motor esquerdo
-
-//const int ENB = 6;  // PWM para velocidade do motor direito
 const int IN3 = 3;  // Controle de direção motor direito
 const int IN4 = 2;  // Controle de direção motor direito
 
-//const int velocidade = 200;  // Velocidade base (0-255)
 const int limiar = 25;      // Limiar para distinguir branco (alto) de preto (baixo)
 
+// Variáveis
+long duracao;
+float distancia;
 int valorEsquerdo,valorDireito;
 
 // Função de setup
@@ -26,16 +27,40 @@ void setup() {
   pinMode(sensorDireito, INPUT);
   
   // Configura os pinos da ponte H como saída
-  //pinMode(ENA, OUTPUT);
   pinMode(IN1, OUTPUT);
   pinMode(IN2, OUTPUT);
-  //pinMode(ENB, OUTPUT);
   pinMode(IN3, OUTPUT);
   pinMode(IN4, OUTPUT);
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
 }
 
 // Função principal de loop
 void loop() {
+
+  // Pulso ultrassônico
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+  // Mede a duração do pulso de eco
+  duracao = pulseIn(echoPin, HIGH);
+
+  // Calcula a distância
+  distancia = (duracao * 0.034) / 2;
+
+  // Verifica se a distância está dentro do intervalo válido
+  if (distancia >= 2 && distancia <= 15) {
+    Serial.print("Distancia: ");
+    Serial.print(distancia);
+    Serial.println(" cm");
+    manobra();
+  } else {
+    Serial.println("Distancia fora do alcance!");
+  }
+
   // Lê os valores analógicos dos sensores
   valorEsquerdo = analogRead(sensorEsquerdo);
   valorDireito = analogRead(sensorDireito);
@@ -61,30 +86,59 @@ void loop() {
   }
 }
 
+void manobra(){
+  int i,tempo=100,atraso=10000;
+  //for(i=0; i<=tempo;i++){
+    viraDireita();
+    delay(atraso);
+  //}
+  //for(i=0; i<=tempo;i++){
+    frente();
+    delay(atraso);
+  //}
+  //for(i=0; i<=tempo;i++){
+    viraEsquerda();
+    delay(atraso);
+  //}
+  //for(i=0; i<=tempo;i++){
+    frente();
+    delay(atraso);
+  //}
+  //for(i=0; i<=tempo;i++){
+    viraEsquerda();
+    delay(atraso);
+  //}
+  //for(i=0; i<=tempo;i++){
+    frente();
+    delay(atraso);
+  //}
+  //for(i=0; i<=tempo;i++){
+    viraDireita();
+    delay(atraso);
+  //}
+}
+
+
 // Função para ir para frente
 void frente() {
   // Motor esquerdo para frente
   digitalWrite(IN1, HIGH);
   digitalWrite(IN2, LOW);
-  //analogWrite(ENA, velocidade);
   
   // Motor direito para frente
   digitalWrite(IN3, HIGH);
   digitalWrite(IN4, LOW);
-  //analogWrite(ENB, velocidade);
 }
 
 // Função para virar à esquerda (parar motor esquerdo, motor direito para frente)
 void viraEsquerda() {
   // Motor esquerdo parado
   digitalWrite(IN1, LOW);
-  digitalWrite(IN2, LOW);
-  //analogWrite(ENA, 0);
+  digitalWrite(IN2, HIGH);
   
   // Motor direito para frente
   digitalWrite(IN3, HIGH);
   digitalWrite(IN4, LOW);
-  //analogWrite(ENB, velocidade);
 }
 
 // Função para virar à direita (motor esquerdo para frente, motor direito parado)
@@ -92,12 +146,10 @@ void viraDireita() {
   // Motor esquerdo para frente
   digitalWrite(IN1, HIGH);
   digitalWrite(IN2, LOW);
-  //analogWrite(ENA, velocidade);
   
   // Motor direito parado
   digitalWrite(IN3, LOW);
-  digitalWrite(IN4, LOW);
-  //analogWrite(ENB, 0);
+  digitalWrite(IN4, HIGH);
 }
 
 // Função para parar
@@ -105,11 +157,9 @@ void parar() {
   // Ambos motores parados
   digitalWrite(IN1, LOW);
   digitalWrite(IN2, LOW);
-  //analogWrite(ENA, 0);
   
   digitalWrite(IN3, LOW);
   digitalWrite(IN4, LOW);
-  //analogWrite(ENB, 0);
 }
 
 void mostrar(){
