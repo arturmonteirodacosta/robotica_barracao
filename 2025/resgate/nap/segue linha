@@ -12,7 +12,7 @@ const int IN2 = 4;  // Controle de direção motor esquerdo
 const int IN3 = 3;  // Controle de direção motor direito
 const int IN4 = 2;  // Controle de direção motor direito
 
-const int limiar = 25;      // Limiar para distinguir branco (alto) de preto (baixo)
+const int limiar = 30;      // Limiar para distinguir branco (alto) de preto (baixo)
 
 // Variáveis
 long duracao;
@@ -87,34 +87,42 @@ void loop() {
 }
 
 void manobra(){
-  int i,tempo=100,atraso=10000;
+  //int i,tempo=100,atraso=10000;
   //for(i=0; i<=tempo;i++){
-    viraDireita();
-    delay(atraso);
+    Serial.println("Pt1");
+    Serial.println(millis());
+    viraEsquerda();
+    delay(2700);
   //}
   //for(i=0; i<=tempo;i++){
+    Serial.println("Pt2");
+    Serial.println(millis());
     frente();
-    delay(atraso);
+    delay(4000);
+  //}
+  //for(i=0; i<=tempo;i++){
+    Serial.println("Pt3");
+    Serial.println(millis());
+    viraDireita();
+    delay(2700);
+  //}
+  //for(i=0; i<=tempo;i++){
+    Serial.println("Pt4");
+    Serial.println(millis());
+    frente();
+    delay(10000);
   //}
   //for(i=0; i<=tempo;i++){
     viraEsquerda();
-    delay(atraso);
+    delay(10000);
   //}
   //for(i=0; i<=tempo;i++){
     frente();
-    delay(atraso);
-  //}
-  //for(i=0; i<=tempo;i++){
-    viraEsquerda();
-    delay(atraso);
-  //}
-  //for(i=0; i<=tempo;i++){
-    frente();
-    delay(atraso);
+    delay(10000);
   //}
   //for(i=0; i<=tempo;i++){
     viraDireita();
-    delay(atraso);
+    delay(10000);
   //}
 }
 
