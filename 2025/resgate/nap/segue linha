@@ -12,7 +12,7 @@ const int IN2 = 4;  // Controle de direção motor esquerdo
 const int IN3 = 3;  // Controle de direção motor direito
 const int IN4 = 2;  // Controle de direção motor direito
 
-const int limiar = 30;      // Limiar para distinguir branco (alto) de preto (baixo)
+const int limiar = 35;      // Limiar para distinguir branco (alto) de preto (baixo)
 
 // Variáveis
 long duracao;
@@ -82,7 +82,7 @@ void loop() {
     viraEsquerda();
   } else {
     // Ambos sobre preto: parar
-    parar();
+    frente();
   }
 }
 
