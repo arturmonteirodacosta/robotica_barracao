@@ -1,0 +1,149 @@
+#include <QTRSensors.h>
+
+// ---------- PINOS L298N (igual ao código de referência) ----------
+#define ENA          11
+#define MOTOR_E_IN1   5
+#define MOTOR_E_IN2   6
+#define ENB           3
+#define MOTOR_D_IN3   9
+#define MOTOR_D_IN4  10
+
+// ---------- CONFIGURAÇÃO DO SENSOR ----------
+#define NUM_SENSORS 8
+#define NUM_SAMPLES_PER_SENSOR 8
+#define EMITTER_PIN 2
+
+QTRSensorsAnalog qtra( 
+  (unsigned char[]){A0, A1, A2, A3, A4, A5, A6, A7},
+  NUM_SENSORS, NUM_SAMPLES_PER_SENSOR, EMITTER_PIN
+);
+unsigned int sensorValues[NUM_SENSORS];
+
+// ---------- FILTRO DE MÉDIA ----------
+#define FILTER_SIZE 4
+float lastPositions[FILTER_SIZE];
+int filterIndex = 0;
+
+float filteredReadLine() {
+  float pos = qtra.readLine(sensorValues, QTR_EMITTERS_ON, true);
+  lastPositions[filterIndex] = pos;
+  filterIndex = (filterIndex + 1) % FILTER_SIZE;
+  long sum = 0;   
+  for (int i = 0; i < FILTER_SIZE; i++) sum += lastPositions[i];
+  return sum / FILTER_SIZE;
+}
+
+// ---------- PARÂMETROS PID ----------
+double KP = 0.50;
+double KI = 0.0;
+double KD = 30;
+double lastError = 0, integral = 0;
+const float GOAL     = 3500;
+const float MAX_ADJUST = 255;
+const float DEADZONE   = 80;
+
+// ============================================================
+//  FUNÇÕES DOS MOTORES — padrão L298N (ENA/ENB + INx)
+// ============================================================
+void motorEsquerdo(int vel) {
+  vel = constrain(vel, -255, 255);
+  if (vel >= 0) {
+    digitalWrite(MOTOR_E_IN1, HIGH);
+    digitalWrite(MOTOR_E_IN2, LOW);
+    analogWrite(ENA, vel);
+  } else {
+    digitalWrite(MOTOR_E_IN1, LOW);
+    digitalWrite(MOTOR_E_IN2, HIGH);
+    analogWrite(ENA, -vel);
+  }
+}
+
+void motorDireito(int vel) {
+  vel = constrain(vel, -255, 255);
+  if (vel >= 0) {
+    digitalWrite(MOTOR_D_IN3, HIGH);
+    digitalWrite(MOTOR_D_IN4, LOW);
+    analogWrite(ENB, vel);
+  } else {
+    digitalWrite(MOTOR_D_IN3, LOW);
+    digitalWrite(MOTOR_D_IN4, HIGH);
+    analogWrite(ENB, -vel);
+  }
+}
+
+void pararMotores() {
+  analogWrite(ENA, 0);
+  analogWrite(ENB, 0);
+  digitalWrite(MOTOR_E_IN1, LOW);
+  digitalWrite(MOTOR_E_IN2, LOW);
+  digitalWrite(MOTOR_D_IN3, LOW);
+  digitalWrite(MOTOR_D_IN4, LOW);
+}
+
+// ============================================================
+//  SETUP
+// ============================================================
+void setup() {
+  Serial.begin(115200);
+
+  pinMode(ENA,         OUTPUT);
+  pinMode(MOTOR_E_IN1, OUTPUT);
+  pinMode(MOTOR_E_IN2, OUTPUT);
+  pinMode(ENB,         OUTPUT);
+  pinMode(MOTOR_D_IN3, OUTPUT);
+  pinMode(MOTOR_D_IN4, OUTPUT);
+
+  pararMotores();
+
+  Serial.println("Calibrando sensores...");
+  for (int i = 0; i < 100; i++) {
+    qtra.calibrate();
+    delay(20);
+  }
+  Serial.println("Calibracao concluida!");
+}
+
+// ============================================================
+//  LOOP PRINCIPAL
+// ============================================================
+void loop() {
+  float position = filteredReadLine();
+  float error    = GOAL - position;
+
+  // Zona morta
+  if (abs(error) < DEADZONE) error = 0;
+
+  // PID com anti-windup
+  integral += error;
+  integral = constrain(integral, -1000, 1000);
+  float derivative = error - lastError;
+  double adjustment = KP * error + KI * integral + KD * derivative;
+  lastError = error;
+  adjustment = constrain(adjustment, -MAX_ADJUST, MAX_ADJUST);
+
+  // Velocidade base dinâmica
+  float curva     = abs(error);
+  float baseSpeed = constrain(255 - (curva / 25), 200, 255);
+
+  float velE, velD;
+
+  // Recuperação de perda de linha nas bordas
+  if (position < 800) {
+    velE = -130;
+    velD =  255;
+  } else if (position > 6200) {
+    velE =  255;
+    velD = -130;
+  } else {
+    velE = constrain(baseSpeed - (float)adjustment, 0, 255);
+    velD = constrain(baseSpeed + (float)adjustment, 0, 255);
+  }
+
+  motorEsquerdo(velE);
+  motorDireito(velD);
+
+  Serial.print("Pos: "); Serial.print(position);
+  Serial.print(" | Err: "); Serial.print(error);
+  Serial.print(" | VE: "); Serial.print(velE);
+  Serial.print(" | VD: "); Serial.println(velD);
+}
