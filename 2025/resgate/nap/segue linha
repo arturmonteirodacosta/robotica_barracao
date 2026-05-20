@@ -1,8 +1,6 @@
-// Pinos MH-Sensor-Seria
+// Definição dos pinos
 const int sensorEsquerdo = A0; // Pino analógico para o sensor IR esquerdo
-const int sensorDireito = A2; // Pino analógico para o sensor IR direito
-
-// Pinos Ponte-H
+const int sensorDireito = A1; // Pino analógico para o sensor IR direito
 const int ENA = 7;
 const int IN1 = 2; // Controle de direção motor esquerdo
 const int IN2 = 3; // Controle de direção motor esquerdo
@@ -11,7 +9,7 @@ const int IN3 = 4; // Controle de direção motor direito
 const int IN4 = 5; // Controle de direção motor direito
 
 //artur: aumentei o limiar por causa da media
-const int limiar = 600; // Limiar para distinguir branco (alto) de preto (baixo)
+const int limiar = 50; // Limiar para distinguir branco (alto) de preto (baixo)
 
 // Variáveis
 int valorEsquerdo,valorDireito;
