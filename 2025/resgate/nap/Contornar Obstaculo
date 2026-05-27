@@ -1,0 +1,189 @@
+// Definição dos pinos
+const int sensorEsquerdo = A0;
+const int sensorDireito = A1;
+const int ENA = 7;
+const int IN1 = 2;
+const int IN2 = 3;
+const int ENB = 6;
+const int IN3 = 4;
+const int IN4 = 5;
+const int trigPin = 9;
+const int echoPin = 8;
+
+// Variáveis
+int valorEsquerdo,valorDireito;
+int lastLeft = 0, lastRight = 0;
+int vel = 255; // ajuste entre 0 e 255 
+const int limiar = 100; // Limiar para distinguir branco (alto) de preto (baixo)
+long duracao;
+float distancia;
+
+// Função de setup
+void setup() {
+    Serial.begin(9600);
+    // Configura os pinos dos sensores como entrada
+    pinMode(sensorEsquerdo, INPUT);
+    pinMode(sensorDireito, INPUT);
+    // Configura os pinos da ponte H como saída
+    pinMode(ENA, OUTPUT);
+    pinMode(IN1, OUTPUT);
+    pinMode(IN2, OUTPUT);
+    pinMode(ENB, OUTPUT);
+    pinMode(IN3, OUTPUT);
+    pinMode(IN4, OUTPUT);
+    pinMode(trigPin, OUTPUT);
+    pinMode(echoPin, INPUT);
+
+    Serial.println("\nEstabilizando sensor...");
+    for(int i = 0; i < 10; i++) {
+      digitalWrite(trigPin, LOW);
+      delayMicroseconds(5);
+      digitalWrite(trigPin, HIGH);
+      delayMicroseconds(10);
+      digitalWrite(trigPin, LOW);
+      pulseIn(echoPin, HIGH, 30000);
+      delay(80);
+    }
+Serial.println("Sensor estabilizado!");
+delay(500);
+    delay(5000);
+}
+// Função principal de loop
+void loop() {
+    valorEsquerdo = analogRead(sensorEsquerdo); //30 70
+    valorDireito = analogRead(sensorDireito); //30 70
+    valorEsquerdo = (valorEsquerdo + lastLeft * 3) / 4; 
+    valorDireito  = (valorDireito  + lastRight * 3) / 4;
+    lastLeft  = valorEsquerdo;
+    lastRight = valorDireito;
+    bool esquerdo = valorEsquerdo < limiar ? HIGH : LOW;
+    bool direito = valorDireito < limiar ? HIGH : LOW;
+    
+    digitalWrite(trigPin, LOW);
+    delayMicroseconds(2);
+    digitalWrite(trigPin, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(trigPin, LOW);
+    duracao = pulseIn(echoPin, HIGH);
+    distancia = (duracao * 0.034) / 2;
+
+    mostrar();
+    if (distancia <= 10 && distancia > 0) {
+        ContornarObstaculo();
+    } else if (esquerdo == HIGH && direito == HIGH) {
+        // Ambos sobre branco: seguir em frente
+        frente();
+    } else if (esquerdo == LOW && direito == HIGH) {
+        // Esquerdo sobre preto, direito sobre branco: virar à direita
+        viraDireita();
+    } else if (esquerdo == HIGH && direito == LOW) {
+        // Esquerdo sobre branco, direito sobre preto: virar à esquerda
+        viraEsquerda();
+    } else {
+        // Ambos sobre preto: frente
+        frente();
+    }
+}
+
+void ContornarObstaculo() {
+    parar();
+    delay(1000);
+    // 1. Vira Direita
+    viraDireita();
+    delay(4000);
+    parar();
+    delay(1000);
+    // 2. Anda para Frente
+    frente();
+    delay(4000);
+    parar();
+    delay(1000);
+    // 3. Vira Esquerda
+    viraEsquerda();
+    delay(5000);
+    parar();
+    delay(1000);
+    // 3. Anda para Frente
+    frente();
+    delay(9000);
+    parar();
+    delay(1000);
+    // 4. Vira Esquerda
+    viraEsquerda();
+    delay(4000);
+    parar();
+    delay(1000);
+    // 5. Anda para Frente
+    frente();
+    delayMicroseconds(5000000);
+}
+// Função para ir para frente
+void frente() {
+    // Motor esquerdo para frente
+    analogWrite(ENA, vel);
+    digitalWrite(IN1, HIGH);
+    digitalWrite(IN2, LOW);
+    // Motor direito para frente
+    analogWrite(ENB, vel);
+    digitalWrite(IN3, HIGH);
+    digitalWrite(IN4, LOW);
+    Serial.print("- Frente");
+}
+// Função para virar à esquerda (parar motor esquerdo, motor direito para frente)
+//Artur: aqui tá errado, não tá parando o motor, tá girando ele pra trás, parar é low low
+void viraDireita() {
+    // Motor esquerdo parado
+    analogWrite(ENA, 0);
+    digitalWrite(IN1, LOW);
+    digitalWrite(IN2, HIGH);
+    // Motor direito para frente
+    analogWrite(ENB, vel);
+    digitalWrite(IN3, HIGH);
+    digitalWrite(IN4, LOW);
+    Serial.print("- ViraEsquerda");
+}
+// Função para virar à direita (motor esquerdo para frente, motor direito parado)
+void viraEsquerda() {
+    // Motor esquerdo para frente
+    analogWrite(ENA, vel);
+    digitalWrite(IN1, HIGH);
+    digitalWrite(IN2, LOW);
+    // Motor direito parado
+    analogWrite(ENB, 0);
+    digitalWrite(IN3, LOW);
+    digitalWrite(IN4, HIGH);
+    Serial.print("- ViraDireita");
+}
+// Função para parar
+void parar() {
+    // Ambos motores parados
+    analogWrite(ENA, 0);
+    digitalWrite(IN1, LOW);
+    digitalWrite(IN2, LOW);
+    analogWrite(ENB, 0);
+    digitalWrite(IN3, LOW);
+    digitalWrite(IN4, LOW);
+    Serial.print("- Parar");
+}
+void Re() {
+    // Motor esquerdo para frente
+    analogWrite(ENA, vel);
+    digitalWrite(IN1, LOW);
+    digitalWrite(IN2, HIGH);
+    // Motor direito para frente
+    analogWrite(ENB, vel);
+    digitalWrite(IN3, LOW);
+    digitalWrite(IN4, HIGH);
+    //Serial.print("- Frente");
+}
+void mostrar(){
+    Serial.print("\nValor esquerdo: | Valor Meio: | Valor Direito: \n");
+    Serial.print(valorEsquerdo);
+    Serial.print("\t");
+    /*Serial.print(valorMeio);
+    Serial.print("\t");*/ 
+    Serial.println(valorDireito);
+    Serial.print("Distancia: ");
+    Serial.print(distancia);
+    Serial.println(" cm");
+}
