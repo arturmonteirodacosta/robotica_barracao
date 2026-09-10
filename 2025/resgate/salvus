@@ -1,0 +1,107 @@
+#include <QTRSensors.h>
+
+// ==================== CONFIGURAÇÕES ====================
+#define NUM_SENSORS 8
+
+QTRSensors qtr;
+unsigned int sensorValues[NUM_SENSORS];
+
+// ========== PINOS DAS DUAS BTS7960 ==========
+// BTS7960 ESQUERDA
+const int L_RPWM = 5;   // PWM Frente Esquerda
+const int L_LPWM = 6;   // PWM Ré Esquerda
+const int L_EN   = 7;   // Enable Esquerda
+
+// BTS7960 DIREITA
+const int R_RPWM = 9;   // PWM Frente Direita
+const int R_LPWM = 10;  // PWM Ré Direita
+const int R_EN   = 11;  // Enable Direita
+
+// ==================== PID ====================
+float KP = 0.05;
+float KD = 0.5;
+float KI = 0.0001;
+
+int lastError = 0;
+long integral = 0;
+
+int baseSpeed = 80;     // velocidade base (comece baixo)
+int maxSpeed  = 180;    // velocidade máxima
+
+// ==================== SETUP ====================
+void setup() {
+  // Pinos da BTS7960 Esquerda
+  pinMode(L_RPWM, OUTPUT);
+  pinMode(L_LPWM, OUTPUT);
+  pinMode(L_EN, OUTPUT);
+
+  // Pinos da BTS7960 Direita
+  pinMode(R_RPWM, OUTPUT);
+  pinMode(R_LPWM, OUTPUT);
+  pinMode(R_EN, OUTPUT);
+
+  // Ativa os enables
+  digitalWrite(L_EN, HIGH);
+  digitalWrite(R_EN, HIGH);
+
+  // Sensores no A0 até A7
+  qtr.setTypeAnalog();
+  qtr.setSensorPins((const uint8_t[]){A0, A1, A2, A3, A4, A5, A6, A7}, NUM_SENSORS);
+
+  delay(500);
+
+  // Calibração (mova o robô sobre a linha)
+  for (uint16_t i = 0; i < 400; i++) {
+    qtr.calibrate();
+    delay(10);
+  }
+
+  delay(1000);
+}
+
+// ==================== LOOP ====================
+void loop() {
+  // Linha branca → use readLineWhite
+  // Linha preta  → use readLineBlack
+  int position = qtr.readLineWhite(sensorValues);
+
+  int error = position - 3500;
+
+  integral += error;
+  int motorSpeed = (KP * error) + (KD * (error - lastError)) + (KI * integral);
+  lastError = error;
+
+  // Anti-windup do integral
+  if (integral > 8000) integral = 8000;
+  if (integral < -8000) integral = -8000;
+
+  int leftSpeed  = baseSpeed + motorSpeed;
+  int rightSpeed = baseSpeed - motorSpeed;
+
+  leftSpeed  = constrain(leftSpeed, -maxSpeed, maxSpeed);
+  rightSpeed = constrain(rightSpeed, -maxSpeed, maxSpeed);
+
+  setMotors(leftSpeed, rightSpeed);
+}
+
+// ==================== CONTROLE DAS DUAS BTS7960 ====================
+void setMotors(int left, int right) {
+
+  // ----- Motor ESQUERDO -----
+  if (left >= 0) {
+    analogWrite(L_RPWM, left);   // Frente
+    analogWrite(L_LPWM, 0);
+  } else {
+    analogWrite(L_RPWM, 0);
+    analogWrite(L_LPWM, -left);  // Ré
+  }
+
+  // ----- Motor DIREITO -----
+  if (right >= 0) {
+    analogWrite(R_RPWM, right);  // Frente
+    analogWrite(R_LPWM, 0);
+  } else {
+    analogWrite(R_RPWM, 0);
+    analogWrite(R_LPWM, -right); // Ré
+  }
+}
