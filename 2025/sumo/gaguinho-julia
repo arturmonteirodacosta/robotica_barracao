@@ -1,0 +1,207 @@
+
+// ==========================================
+// ROBÔ DE SUMÔ
+// HC-SR04 + L298N
+// ==========================================
+
+// ==========================================
+// SENSOR ULTRASSÔNICO
+// ==========================================
+
+const int trigPin = 7;
+const int echoPin = 6;
+
+
+// ==========================================
+// L298N
+// ==========================================
+
+// Motor esquerdo
+const int ENA = 9;
+const int in1 = 2;
+const int in2 = 3;
+
+// Motor direito
+const int ENB = 10;
+const int in3 = 4;
+const int in4 = 5;
+
+
+// ==========================================
+// CONFIGURAÇÕES
+// ==========================================
+
+// Distância para detectar oponente
+const int distanciaLimite = 45;
+
+// Velocidade do ataque
+const int velocidadeAtaque = 255;
+
+// Velocidade do giro de procura
+const int velocidadeGiro = 125;
+
+
+// ==========================================
+// SETUP
+// ==========================================
+
+void setup() {
+
+  // Sensor
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+
+  // Motor esquerdo
+  pinMode(ENA, OUTPUT);
+  pinMode(in1, OUTPUT);
+  pinMode(in2, OUTPUT);
+
+  // Motor direito
+  pinMode(ENB, OUTPUT);
+  pinMode(in3, OUTPUT);
+  pinMode(in4, OUTPUT);
+
+  Serial.begin(9600);
+
+  // Começa com os motores desligados
+  analogWrite(ENA, 0);
+  analogWrite(ENB, 0);
+
+  parar();
+
+  // Espera 1 segundo
+  delay(1000);
+}
+
+
+// ==========================================
+// LOOP
+// ==========================================
+
+void loop() {
+
+  long duracao;
+  long distancia;
+
+
+  // ========================================
+  // LEITURA DO SENSOR
+  // ========================================
+
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+
+  digitalWrite(trigPin, LOW);
+
+  duracao = pulseIn(echoPin, HIGH, 30000);
+
+
+  // ========================================
+  // CALCULA DISTÂNCIA
+  // ========================================
+
+  if (duracao == 0) {
+
+    distancia = 999;
+
+  } else {
+
+    distancia = duracao * 0.034 / 2;
+  }
+
+
+  // ========================================
+  // MONITOR SERIAL
+  // ========================================
+
+  Serial.print("Distancia: ");
+  Serial.print(distancia);
+  Serial.println(" cm");
+
+
+  // ========================================
+  // DECISÃO
+  // ========================================
+
+  if (distancia > 0 && distancia <= distanciaLimite) {
+
+    // ======================================
+    // OPONENTE ENCONTRADO
+    // ======================================
+
+    Serial.println("OPONENTE ENCONTRADO!");
+    Serial.println("ATAQUE!");
+
+    moverFrente();
+
+  } else {
+
+    // ======================================
+    // PROCURANDO OPONENTE
+    // ======================================
+
+    Serial.println("PROCURANDO...");
+
+    girarNoEixo();
+  }
+
+
+  delay(10);
+}
+
+
+// ==========================================
+// ATAQUE
+// ==========================================
+
+void moverFrente() {
+
+  // Velocidade máxima
+  analogWrite(ENA, velocidadeAtaque);
+  analogWrite(ENB, velocidadeAtaque);
+
+  // Motor esquerdo → frente
+  digitalWrite(in1, HIGH);
+  digitalWrite(in2, LOW);
+
+  // Motor direito → frente
+  digitalWrite(in3, HIGH);
+  digitalWrite(in4, LOW);
+}
+
+
+// ==========================================
+// GIRO NO PRÓPRIO EIXO
+// ==========================================
+
+void girarNoEixo() {
+
+  // Velocidade reduzida para procurar
+  analogWrite(ENA, velocidadeGiro);
+  analogWrite(ENB, velocidadeGiro);
+
+  // Motor esquerdo → frente
+  digitalWrite(in1, HIGH);
+  digitalWrite(in2, LOW);
+
+  // Motor direito → ré
+  digitalWrite(in3, LOW);
+  digitalWrite(in4, HIGH);
+}
+
+
+// ==========================================
+// PARAR
+// ==========================================
+
+void parar() {
+
+  digitalWrite(in1, LOW);
+  digitalWrite(in2, LOW);
+
+  digitalWrite(in3, LOW);
+  digitalWrite(in4, LOW);
+}
