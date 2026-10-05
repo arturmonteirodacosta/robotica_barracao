@@ -1,0 +1,121 @@
+#include <AFMotor.h>
+
+// ===== Motores =====
+AF_DCMotor motor1(1); // M1 - Esquerdo dianteiro
+AF_DCMotor motor2(2); // M2 - Esquerdo traseiro
+AF_DCMotor motor3(3); // M3 - Direito dianteiro
+AF_DCMotor motor4(4); // M4 - Direito traseiro
+
+// ===== Sensor Ultrassônico =====
+const int trigPin = A1;
+const int echoPin = A0;
+const int distanciaLimite = 30; // cm
+
+// ===== Variáveis =====
+long duracao;
+int distancia;
+
+void setup() {
+  // Sensor
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+
+  // Velocidade dos motores
+  motor1.setSpeed(180);
+  motor2.setSpeed(180);
+  motor3.setSpeed(180);
+  motor4.setSpeed(180);
+
+  // Comunicação serial
+  Serial.begin(9600);
+  Serial.println("Robo procurando...");
+
+  // Garante que os motores começam parados
+  parar();
+}
+
+void loop() {
+
+  // ===== Leitura do sensor ultrassônico =====
+
+  // Limpa o pino TRIG
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+
+  // Envia pulso de 10 microssegundos
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+  // Lê o tempo de retorno
+  duracao = pulseIn(echoPin, HIGH, 30000);
+
+  // Se não recebeu o sinal
+  if (duracao == 0) {
+    distancia = 0;
+  } 
+  else {
+    // Calcula distância em centímetros
+    distancia = (duracao * 0.0343) / 2;
+  }
+
+  // ===== Monitor Serial =====
+
+  Serial.print("Distancia: ");
+  Serial.print(distancia);
+  Serial.println(" cm");
+
+  // ===== Controle do robô =====
+
+  if (distancia > 0 && distancia <= distanciaLimite) {
+
+    // Encontrou um objeto
+    Serial.println("Objeto encontrado! Indo para frente.");
+
+    moverFrente();
+
+  } 
+  else {
+
+    // Não encontrou nada
+    Serial.println("Procurando...");
+
+    girarDireita();
+  }
+
+  delay(50);
+}
+
+// =====================================================
+// FUNÇÕES DE MOVIMENTO
+// =====================================================
+
+void moverFrente() {
+  motor1.run(BACKWARD);
+  motor2.run(FORWARD);
+  motor3.run(FORWARD);
+  motor4.run(BACKWARD);
+}
+
+void girarDireita() {
+  motor1.run(FORWARD);
+  motor2.run(FORWARD);
+
+  motor3.run(BACKWARD);
+  motor4.run(BACKWARD);
+}
+
+void girarEsquerda() {
+  motor1.run(BACKWARD);
+  motor2.run(BACKWARD);
+
+  motor3.run(FORWARD);
+  motor4.run(FORWARD);
+}
+
+void parar() {
+  motor1.run(RELEASE);
+  motor2.run(RELEASE);
+  motor3.run(RELEASE);
+  motor4.run(RELEASE);
+}
